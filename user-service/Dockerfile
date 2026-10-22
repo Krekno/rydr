@@ -25,6 +25,6 @@ RUN groupadd --system app && useradd --system --gid app app
 COPY --from=build --chown=app:app /app/build/libs/*.jar app.jar
 
 USER app
-EXPOSE 8080
+EXPOSE 8000
 
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
