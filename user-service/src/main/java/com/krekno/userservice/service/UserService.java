@@ -24,7 +24,7 @@ public class UserService {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
 
-    public User createUser(RegisterDto registerDto) {
+    public void createUser(RegisterDto registerDto) {
         Instant now = Instant.now();
 
         User newUser = User.builder()
@@ -37,7 +37,7 @@ public class UserService {
                 .createdAt(now)
                 .build();
 
-        return userRepository.save(newUser);
+        userRepository.save(newUser);
     }
 
     public String AuthenticateUser(LoginDto LoginDto) {
