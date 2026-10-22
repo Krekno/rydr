@@ -37,9 +37,9 @@ public class User {
     @NotBlank(message = "password can't be empty")
     private String password;
 
-    @Column(name = "phone", nullable = false)
+    @Column(name = "phone_number", nullable = false)
     @NotBlank(message = "phone can't be empty")
-    private String phone;
+    private String phoneNumber;
 
     @Column(name = "role", nullable = false)
     private Role role;
