@@ -3,7 +3,7 @@ spring:
     name: user-service
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -17,3 +17,16 @@ spring:
     password: ${DB_USER_PASSWORD:postgres}
   config:
     import: "optional:configserver:"
+  web:
+    error:
+      include-message: always
+rsa:
+  private-key: classpath:certs/private-key.pem
+  public-key: classpath:certs/public-key.pem
+server:
+  port: 8000
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
