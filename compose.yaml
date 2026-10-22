@@ -1,0 +1,37 @@
+services:
+  postgres-user:
+    image: postgres:18
+    container_name: postgres-users
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata-user:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d users"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  user:
+    build: ./user-service
+    container_name: user
+    ports:
+      - "8081:8080"
+    env_file:
+      - ./.env
+    depends_on:
+#      config:
+#        condition: service_healthy
+#      discovery:
+#        condition: service_healthy
+      postgres-user:
+        condition: service_healthy
+
+
+volumes:
+  pgdata-user:
