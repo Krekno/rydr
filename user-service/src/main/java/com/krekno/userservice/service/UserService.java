@@ -20,7 +20,7 @@ import java.time.Instant;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final AuthService authService;
+    private final TokenService tokenService;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
 
@@ -52,7 +52,7 @@ public class UserService {
 
         authentication.getPrincipal();
 
-        return authService.generateToken(authentication);
+        return tokenService.generateToken(authentication);
     }
 
 }
