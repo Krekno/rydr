@@ -1,0 +1,102 @@
+
+# ==============================
+# IDEs and editors
+# ==============================
+.idea/
+.vscode/
+*.iml
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+
+# ==============================
+# OS files
+# ==============================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ==============================
+# Java / Maven / Gradle
+# ==============================
+*.class
+*.jar
+*.war
+*.ear
+target/
+build/
+.gradle/
+out/
+
+# ==============================
+# Environment variables / secrets
+# ==============================
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+secrets/
+credentials/
+
+# ==============================
+# Node.js / React / React Native
+# ==============================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+.expo/
+expo-env.d.ts
+web-build/
+dist/
+coverage/
+
+# ==============================
+# JavaScript / TypeScript caches
+# ==============================
+.next/
+.turbo/
+.cache/
+*.tsbuildinfo
+
+# ==============================
+# React Native / Android
+# ==============================
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+*.keystore
+!debug.keystore
+
+# ==============================
+# Testing / coverage
+# ==============================
+.nyc_output/
+playwright-report/
+test-results/
+
+# ==============================
+# Logs
+# ==============================
+*.log
+logs/
+
+# ==============================
+# Docker / local development data
+# ==============================
+# Ignore local database volumes if stored in the repository
+# postgres-data/
+# redis-data/
+
+# ==============================
+# Temporary files
+# ==============================
+tmp/
+temp/
+*.tmp
+*.bak
