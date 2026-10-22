@@ -27,7 +27,7 @@ public class User {
 
     @Column(name = "last_name", nullable = false)
     @NotBlank(message = "surname can't be empty")
-    private String surname;
+    private String lastName;
 
     @Column(name = "email", nullable = false, unique = true)
     @NotBlank(message = "email can't be empty")
