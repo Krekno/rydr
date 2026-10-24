@@ -27,6 +27,11 @@ public class UserService {
     public void createUser(RegisterDto registerDto) {
         Instant now = Instant.now();
 
+        if (userRepository.existsByEmail(registerDto.email()))
+            throw new RuntimeException("Email already exists");
+        if (userRepository.existsByPhoneNumber(registerDto.phoneNumber()))
+            throw new RuntimeException("Phone number already exists");
+
         User newUser = User.builder()
                 .firstName(registerDto.firstName())
                 .lastName(registerDto.lastName())
