@@ -21,7 +21,7 @@ public class Vehicle {
     private UUID id;
 
     @JoinColumn(name = "driver_id", nullable = false)
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     private Driver driver;
 
     @Column(name = "make", nullable = false)

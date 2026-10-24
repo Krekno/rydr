@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -26,13 +27,12 @@ public class Driver {
     @OneToOne(fetch = FetchType.LAZY)
     private User user;
 
-    @Column(name = "license_plate", nullable = false)
-    @NotBlank(message = "license plate can't be empty")
-    private String licensePlate;
-
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private DriverStatus status;
+
+    @OneToMany(mappedBy = "driver", fetch = FetchType.LAZY)
+    private List<Vehicle> vehicles;
 
     @Column(name = "rating_average", nullable = false)
     private Float ratingAverage;
