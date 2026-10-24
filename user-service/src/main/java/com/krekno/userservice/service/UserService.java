@@ -1,5 +1,6 @@
 package com.krekno.userservice.service;
 
+import com.krekno.userservice.dto.AuthResponse;
 import com.krekno.userservice.dto.LoginDto;
 import com.krekno.userservice.dto.RegisterDto;
 import com.krekno.userservice.entity.User;
@@ -45,7 +46,7 @@ public class UserService {
         userRepository.save(newUser);
     }
 
-    public String AuthenticateUser(LoginDto LoginDto) {
+    public AuthResponse authenticateUser(LoginDto LoginDto) {
         User user = userRepository.findUserByEmail(LoginDto.email()).orElseThrow();
 
         Authentication authentication =
@@ -57,7 +58,8 @@ public class UserService {
 
         authentication.getPrincipal();
 
-        return tokenService.generateToken(authentication);
+        return new AuthResponse(tokenService.generateRefreshToken(authentication),
+                tokenService.generateToken(authentication));
     }
 
 }

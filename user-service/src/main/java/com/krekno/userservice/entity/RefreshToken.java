@@ -2,6 +2,7 @@ package com.krekno.userservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -27,6 +28,10 @@ public class RefreshToken {
     private String token;
 
     @Column(name = "created_at", nullable = false)
+    @CreationTimestamp
     private Instant createdAt;
+
+    @Column(name = "expires_at", nullable = false)
+    private Instant expiresAt;
 
 }

@@ -4,6 +4,7 @@ import com.krekno.userservice.entity.enums.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -45,7 +46,8 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
     private Instant createdAt;
 
 }
