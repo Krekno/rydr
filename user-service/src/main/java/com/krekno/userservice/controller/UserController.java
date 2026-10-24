@@ -3,6 +3,8 @@ package com.krekno.userservice.controller;
 import com.krekno.userservice.dto.LoginDto;
 import com.krekno.userservice.dto.RegisterDto;
 import com.krekno.userservice.service.UserService;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,14 +20,14 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterDto registerDto) {
+    public ResponseEntity<String> register(@RequestBody @Valid RegisterDto registerDto) {
         userService.createUser(registerDto);
         LoginDto loginDto = new LoginDto(registerDto.email(), registerDto.password());
         return ResponseEntity.ok(userService.AuthenticateUser(loginDto));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginDto loginDto) {
+    public ResponseEntity<String> login(@RequestBody @Valid LoginDto loginDto) {
         return ResponseEntity.ok(userService.AuthenticateUser(loginDto));
     }
 
