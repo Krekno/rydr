@@ -1,20 +1,21 @@
 package com.krekno.userservice.security;
 
 import com.krekno.userservice.entity.User;
+
+import lombok.RequiredArgsConstructor;
+
 import org.jetbrains.annotations.NotNull;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
 
-public class UserDetailsImpl extends User implements UserDetails {
+@RequiredArgsConstructor
+public class UserDetailsImpl implements UserDetails {
 
     private final User user;
-
-    public UserDetailsImpl(User user) {
-        this.user = user;
-    }
 
     @NotNull
     @Override
@@ -29,7 +30,7 @@ public class UserDetailsImpl extends User implements UserDetails {
     @NotNull
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return List.of(new SimpleGrantedAuthority(user.getRole().name()));
     }
 
     @Override
