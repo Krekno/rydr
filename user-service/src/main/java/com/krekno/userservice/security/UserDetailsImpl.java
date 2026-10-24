@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.List;
 
 @RequiredArgsConstructor
-public class UserDetailsImpl implements UserDetails {
+public class UserDetailsImpl extends User implements UserDetails {
 
     private final User user;
 
