@@ -31,6 +31,7 @@ public class Driver {
     private String licensePlate;
 
     @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING)
     private DriverStatus status;
 
     @Column(name = "rating_average", nullable = false)
