@@ -1,37 +1,185 @@
 services:
-  postgres-user:
-    image: postgres:18
-    container_name: postgres-users
+  # ========================================================
+  # Database Tier: PostgreSQL 16 + PostGIS
+  # Supports: users, trips (PostGIS spatial), ratings, payments
+  # ========================================================
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: rydr-postgres
     environment:
       POSTGRES_DB: users
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "5433:5432"
     volumes:
-      - pgdata-user:/var/lib/postgresql
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d users"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - rydr-network
 
-  user:
+  # ========================================================
+  # Caching & Location Tier: Redis 7
+  # Supports: Redis GEO for low-latency driver GPS ingestion
+  # ========================================================
+  redis:
+    image: redis:7-alpine
+    container_name: rydr-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - rydr-network
+
+  # ========================================================
+  # Messaging Tier: Apache Kafka (KRaft mode, No Zookeeper)
+  # Event streaming for trips, matching, notifications, payments
+  # ========================================================
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: rydr-kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,EXTERNAL://:29092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 3
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - rydr-network
+
+  # ========================================================
+  # Kafka UI: Web Console for Kafka Topics & Events
+  # Access at http://localhost:8085
+  # ========================================================
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: rydr-kafka-ui
+    ports:
+      - "8085:8080"
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_NAME: rydr-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
+    restart: unless-stopped
+    networks:
+      - rydr-network
+
+  # ========================================================
+  # Core Infrastructure: Service Discovery (Eureka Server)
+  # Access dashboard at http://localhost:8761
+  # ========================================================
+  discovery:
+    build: ./discovery-service
+    container_name: rydr-discovery-service
+    ports:
+      - "8761:8761"
+    restart: unless-stopped
+    networks:
+      - rydr-network
+
+  # ========================================================
+  # API Gateway: Central Entry Point & Reverse Proxy
+  # Routes requests to downstream microservices & proxies WebSockets
+  # ========================================================
+  gateway:
+    build: ./gateway-service
+    container_name: rydr-gateway-service
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_SERVER_URL: http://discovery:8761/eureka/
+    depends_on:
+      - discovery
+    restart: unless-stopped
+    networks:
+      - rydr-network
+
+  # ========================================================
+  # Core Microservice: User & Authentication Service
+  # ========================================================
+  user-service:
     build: ./user-service
-    container_name: user
+    container_name: rydr-user-service
     ports:
       - "8000:8000"
     env_file:
       - ./.env
+    environment:
+      DB_USER_URL: jdbc:postgresql://postgres:5432/users
+      DB_USER_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_USER_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      EUREKA_SERVER_URL: http://discovery:8761/eureka/
     depends_on:
-#      config:
-#        condition: service_healthy
-#      discovery:
-#        condition: service_healthy
-      postgres-user:
+      postgres:
         condition: service_healthy
+      discovery:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - rydr-network
 
+  # ========================================================
+  # Core Microservice: Location Service (Redis GEO)
+  # High-throughput driver GPS ingestion & radius search
+  # ========================================================
+  location-service:
+    build: ./location-service
+    container_name: rydr-location-service
+    ports:
+      - "8003:8003"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_SERVER_URL: http://discovery:8761/eureka/
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - rydr-network
+
+networks:
+  rydr-network:
+    name: rydr-network
+    driver: bridge
 
 volumes:
-  pgdata-user:
+  pgdata:
+  redis-data:
