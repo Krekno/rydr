@@ -58,15 +58,14 @@ public class LocationService {
         redisTemplate.opsForValue().set(metaKey, details, Duration.ofSeconds(heartbeatTimeoutSeconds));
 
         // 3. Publish location update to Kafka for downstream consumers
-        DriverLocationEvent event = DriverLocationEvent.builder()
-                .driverId(request.driverId())
-                .latitude(request.latitude())
-                .longitude(request.longitude())
-                .bearing(details.bearing())
-                .speed(details.speed())
-                .activeTripId(request.activeTripId())
-                .timestamp(now)
-                .build();
+
+        DriverLocationEvent event = new DriverLocationEvent(request.driverId(),
+                request.latitude(),
+                request.longitude(),
+                details.bearing(),
+                details.speed(),
+                request.activeTripId(),
+                now);
 
         kafkaTemplate.send(KafkaProducerConfig.DRIVER_LOCATION_TOPIC, driverIdStr, event);
         log.debug("Updated location for driver: {} (lat: {}, lon: {})", driverIdStr, request.latitude(), request.longitude());
