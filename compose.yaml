@@ -1,8 +1,4 @@
 services:
-  # ========================================================
-  # Database Tier: PostgreSQL 16 + PostGIS
-  # Supports: users, trips (PostGIS spatial), ratings, payments
-  # ========================================================
   postgres:
     image: postgis/postgis:16-3.4
     container_name: rydr-postgres
@@ -24,10 +20,6 @@ services:
     networks:
       - rydr-network
 
-  # ========================================================
-  # Caching & Location Tier: Redis 7
-  # Supports: Redis GEO for low-latency driver GPS ingestion
-  # ========================================================
   redis:
     image: redis:7-alpine
     container_name: rydr-redis
@@ -45,10 +37,6 @@ services:
     networks:
       - rydr-network
 
-  # ========================================================
-  # Messaging Tier: Apache Kafka (KRaft mode, No Zookeeper)
-  # Event streaming for trips, matching, notifications, payments
-  # ========================================================
   kafka:
     image: apache/kafka:3.8.0
     container_name: rydr-kafka
@@ -77,10 +65,6 @@ services:
     networks:
       - rydr-network
 
-  # ========================================================
-  # Kafka UI: Web Console for Kafka Topics & Events
-  # Access at http://localhost:8085
-  # ========================================================
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: rydr-kafka-ui
@@ -96,10 +80,6 @@ services:
     networks:
       - rydr-network
 
-  # ========================================================
-  # Core Infrastructure: Service Discovery (Eureka Server)
-  # Access dashboard at http://localhost:8761
-  # ========================================================
   discovery:
     build: ./discovery-service
     container_name: rydr-discovery-service
@@ -109,10 +89,6 @@ services:
     networks:
       - rydr-network
 
-  # ========================================================
-  # API Gateway: Central Entry Point & Reverse Proxy
-  # Routes requests to downstream microservices & proxies WebSockets
-  # ========================================================
   gateway:
     build: ./gateway-service
     container_name: rydr-gateway-service
@@ -126,9 +102,6 @@ services:
     networks:
       - rydr-network
 
-  # ========================================================
-  # Core Microservice: User & Authentication Service
-  # ========================================================
   user-service:
     build: ./user-service
     container_name: rydr-user-service
@@ -150,10 +123,6 @@ services:
     networks:
       - rydr-network
 
-  # ========================================================
-  # Core Microservice: Location Service (Redis GEO)
-  # High-throughput driver GPS ingestion & radius search
-  # ========================================================
   location-service:
     build: ./location-service
     container_name: rydr-location-service
