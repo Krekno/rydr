@@ -1,16 +1,22 @@
 package com.krekno.userservice.service;
 
+import com.krekno.userservice.dto.AuthResponse;
 import com.krekno.userservice.entity.RefreshToken;
 import com.krekno.userservice.entity.User;
 import com.krekno.userservice.repository.RefreshTokenRepository;
 import com.krekno.userservice.repository.UserRepository;
+import com.krekno.userservice.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -49,13 +55,13 @@ public class TokenService {
                 .build();
 
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
-
     }
 
+    @Transactional
     public String generateRefreshToken(Authentication authentication) {
         User user = userRepository
                 .findById(UUID.fromString(authentication.getName()))
-                .orElseThrow();
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         byte[] randomBytes = new byte[32];
         SECURE_RANDOM.nextBytes(randomBytes);
@@ -82,6 +88,32 @@ public class TokenService {
         return token;
     }
 
+    @Transactional
+    public AuthResponse refreshAccessToken(String rawRefreshToken) {
+        String hashedToken = hashToken(rawRefreshToken);
+
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(hashedToken)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+
+        if (refreshToken.getExpiresAt().isBefore(Instant.now())) {
+            refreshTokenRepository.delete(refreshToken);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token has expired");
+        }
+
+        User user = refreshToken.getUser();
+        UserDetailsImpl userDetails = new UserDetailsImpl(user);
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                user.getId().toString(),
+                null,
+                userDetails.getAuthorities()
+        );
+
+        String newAccessToken = generateToken(auth);
+        String newRefreshToken = generateRefreshToken(auth);
+
+        return new AuthResponse(newRefreshToken, newAccessToken);
+    }
+
     public static String hashToken(String token) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -96,7 +128,10 @@ public class TokenService {
         }
     }
 
-    public void deleteRefreshToken(UUID userId) {
-        refreshTokenRepository.deleteByUser_Id(userId);
+    @Transactional
+    public void deleteRefreshToken(Authentication authentication) {
+        if (authentication != null && authentication.getName() != null) {
+            refreshTokenRepository.deleteByUser_Id(UUID.fromString(authentication.getName()));
+        }
     }
 }
