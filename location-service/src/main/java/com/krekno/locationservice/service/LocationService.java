@@ -95,18 +95,22 @@ public class LocationService {
             String metaKey = metaPrefix + driverIdStr;
 
             Object metaObj = redisTemplate.opsForValue().get(metaKey);
-            if (metaObj instanceof DriverLocationDetails details) {
+            if (metaObj instanceof DriverLocationDetails(
+                    UUID driverId, Double latitude1, Double longitude1, Float bearing, Double speed, UUID activeTripId,
+                    Instant lastSeen
+            )) {
                 // If driver is currently on an active trip, exclude from available nearby pool
-                if (details.activeTripId() == null) {
-                    nearbyDrivers.add(NearbyDriverResponse.builder()
-                            .driverId(details.driverId())
-                            .latitude(details.latitude())
-                            .longitude(details.longitude())
-                            .distanceKm(result.getDistance().getValue())
-                            .bearing(details.bearing())
-                            .speed(details.speed())
-                            .lastSeen(details.lastSeen())
-                            .build());
+                if (activeTripId == null) {
+
+                    NearbyDriverResponse nearbyDriverResponse = new NearbyDriverResponse(driverId,
+                            latitude1,
+                            longitude1,
+                            result.getDistance().getValue(),
+                            bearing,
+                            speed,
+                            lastSeen);
+
+                    nearbyDrivers.add(nearbyDriverResponse);
                 }
             } else {
                 // Heartbeat expired, clean up stale GEO index entry
@@ -126,8 +130,8 @@ public class LocationService {
 
         // Fallback: check Redis GEO coordinates
         List<Point> positions = redisTemplate.opsForGeo().position(geoKey, driverId.toString());
-        if (positions != null && !positions.isEmpty() && positions.get(0) != null) {
-            Point p = positions.get(0);
+        if (positions != null && !positions.isEmpty() && positions.getFirst() != null) {
+            Point p = positions.getFirst();
             return Optional.of(DriverLocationDetails.builder()
                     .driverId(driverId)
                     .latitude(p.getY())
