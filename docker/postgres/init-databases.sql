@@ -1,6 +1,3 @@
--- Rydr Microservices Database Initialization Script
--- Automatically creates required databases and enables PostGIS / UUID extensions
-
 -- Create Databases
 CREATE DATABASE trips;
 CREATE DATABASE ratings;
