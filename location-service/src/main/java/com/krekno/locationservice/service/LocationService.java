@@ -39,25 +39,20 @@ public class LocationService {
         String driverIdStr = request.driverId().toString();
         Instant now = Instant.now();
 
-        // 1. Update Redis GEO coordinates (Longitude first, then Latitude in Redis)
         Point point = new Point(request.longitude(), request.latitude());
         redisTemplate.opsForGeo().add(geoKey, point, driverIdStr);
 
-        // 2. Store metadata (bearing, speed, trip, lastSeen) with TTL heartbeat
-        DriverLocationDetails details = DriverLocationDetails.builder()
-                .driverId(request.driverId())
-                .latitude(request.latitude())
-                .longitude(request.longitude())
-                .bearing(request.bearing() != null ? request.bearing() : 0.0f)
-                .speed(request.speed() != null ? request.speed() : 0.0)
-                .activeTripId(request.activeTripId())
-                .lastSeen(now)
-                .build();
+        DriverLocationDetails details = new DriverLocationDetails(
+                request.driverId(),
+                request.latitude(),
+                request.longitude(),
+                request.bearing() != null ? request.bearing() : 0.0f,
+                request.speed() != null ? request.speed() : 0.0,
+                request.activeTripId(),
+                now);
 
         String metaKey = metaPrefix + driverIdStr;
         redisTemplate.opsForValue().set(metaKey, details, Duration.ofSeconds(heartbeatTimeoutSeconds));
-
-        // 3. Publish location update to Kafka for downstream consumers
 
         DriverLocationEvent event = new DriverLocationEvent(request.driverId(),
                 request.latitude(),
@@ -98,7 +93,6 @@ public class LocationService {
                     UUID driverId, Double latitude1, Double longitude1, Float bearing, Double speed, UUID activeTripId,
                     Instant lastSeen
             )) {
-                // If driver is currently on an active trip, exclude from available nearby pool
                 if (activeTripId == null) {
 
                     NearbyDriverResponse nearbyDriverResponse = new NearbyDriverResponse(driverId,
@@ -112,7 +106,6 @@ public class LocationService {
                     nearbyDrivers.add(nearbyDriverResponse);
                 }
             } else {
-                // Heartbeat expired, clean up stale GEO index entry
                 redisTemplate.opsForZSet().remove(geoKey, driverIdStr);
             }
         }
@@ -127,7 +120,6 @@ public class LocationService {
             return Optional.of(details);
         }
 
-        // Fallback: check Redis GEO coordinates
         List<Point> positions = redisTemplate.opsForGeo().position(geoKey, driverId.toString());
         if (positions != null && !positions.isEmpty() && positions.getFirst() != null) {
             Point p = positions.getFirst();
