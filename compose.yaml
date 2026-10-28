@@ -91,7 +91,7 @@ services:
 
   gateway:
     build: ./gateway-service
-    container_name: rydr-gateway-service
+    container_name: rydr-gatewayservice-service
     ports:
       - "8080:8080"
     environment:
