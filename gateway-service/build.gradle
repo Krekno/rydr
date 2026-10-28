@@ -6,7 +6,7 @@ plugins {
 
 group = 'com.krekno'
 version = '0.0.1-SNAPSHOT'
-description = 'gatewayservice-service'
+description = 'gateway-service'
 
 java {
 	toolchain {
