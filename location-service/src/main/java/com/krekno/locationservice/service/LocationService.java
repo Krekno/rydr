@@ -99,7 +99,6 @@ public class LocationService {
                     Instant lastSeen
             )) {
                 if (activeTripId == null) {
-
                     NearbyDriverResponse nearbyDriverResponse = new NearbyDriverResponse(
                             driverId,
                             latitude1,
