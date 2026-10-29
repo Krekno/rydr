@@ -100,7 +100,8 @@ public class LocationService {
             )) {
                 if (activeTripId == null) {
 
-                    NearbyDriverResponse nearbyDriverResponse = new NearbyDriverResponse(driverId,
+                    NearbyDriverResponse nearbyDriverResponse = new NearbyDriverResponse(
+                            driverId,
                             latitude1,
                             longitude1,
                             result.getDistance().getValue(),
