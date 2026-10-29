@@ -12,7 +12,7 @@ spring:
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   datasource:
-    url: ${DB_USER_URL:jdbc:postgresql://localhost:5433/users}
+    url: ${DB_USER_URL:jdbc:postgresql://localhost:5432/users}
     username: ${DB_USER_USERNAME:postgres}
     password: ${DB_USER_PASSWORD:postgres}
   config:
