@@ -90,7 +90,12 @@ public class LocationService {
 
             Object metaObj = redisTemplate.opsForValue().get(metaKey);
             if (metaObj instanceof DriverLocationDetails(
-                    UUID driverId, Double latitude1, Double longitude1, Float bearing, Double speed, UUID activeTripId,
+                    UUID driverId,
+                    Double latitude1,
+                    Double longitude1,
+                    Float bearing,
+                    Double speed,
+                    UUID activeTripId,
                     Instant lastSeen
             )) {
                 if (activeTripId == null) {
