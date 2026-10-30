@@ -27,18 +27,24 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class VehicleServiceTest {
-    @Mock VehicleRepository repository;
-    @Mock DriverRepository drivers;
-    private VehicleService service;
+    @Mock VehicleRepository vehicleRepository;
+    @Mock DriverRepository driverRepository;
+    private VehicleService vehicleService;
     private UUID userId;
     private Driver driver;
     private Vehicle vehicle;
     private Authentication authentication;
-    private final CreateVehicleRequest request = new CreateVehicleRequest("Toyota", "Corolla", 2024, "White", "34 abc 123");
+    private final CreateVehicleRequest request = new CreateVehicleRequest(
+            "Toyota",
+            "Corolla",
+            2024,
+            "White",
+            "34 abc 123"
+    );
 
     @BeforeEach
     void setUp() {
-        service = new VehicleService(repository, drivers);
+        vehicleService = new VehicleService(vehicleRepository, driverRepository);
         userId = UUID.randomUUID();
         driver = Driver.builder().id(UUID.randomUUID()).build();
         vehicle = Vehicle.builder().id(UUID.randomUUID()).driver(driver).make("Toyota").model("Corolla")
@@ -48,74 +54,74 @@ class VehicleServiceTest {
 
     @Test
     void addVehicleNormalizesPlateAndAssociatesAuthenticatedDriver() {
-        when(drivers.findByUserId(userId)).thenReturn(Optional.of(driver));
-        when(repository.save(any())).thenAnswer(invocation -> {
+        when(driverRepository.findByUserId(userId)).thenReturn(Optional.of(driver));
+        when(vehicleRepository.save(any())).thenAnswer(invocation -> {
             Vehicle saved = invocation.getArgument(0);
             saved.setId(vehicle.getId());
             return saved;
         });
 
-        VehicleDto result = service.addVehicle(authentication, request);
+        VehicleDto result = vehicleService.addVehicle(authentication, request);
 
-        verify(repository).existsByLicensePlate("34 ABC 123");
+        verify(vehicleRepository).existsByLicensePlate("34 ABC 123");
         ArgumentCaptor<Vehicle> saved = ArgumentCaptor.forClass(Vehicle.class);
-        verify(repository).save(saved.capture());
+        verify(vehicleRepository).save(saved.capture());
         assertSame(driver, saved.getValue().getDriver());
         assertEquals(expectedVehicle(), result);
     }
 
     @Test
     void addVehicleRejectsDuplicatePlateWithoutSaving() {
-        when(drivers.findByUserId(userId)).thenReturn(Optional.of(driver));
-        when(repository.existsByLicensePlate("34 ABC 123")).thenReturn(true);
+        when(driverRepository.findByUserId(userId)).thenReturn(Optional.of(driver));
+        when(vehicleRepository.existsByLicensePlate("34 ABC 123")).thenReturn(true);
 
-        assertStatus(HttpStatus.CONFLICT, () -> service.addVehicle(authentication, request));
+        assertStatus(HttpStatus.CONFLICT, () -> vehicleService.addVehicle(authentication, request));
 
-        verify(repository, never()).save(any());
+        verify(vehicleRepository, never()).save(any());
     }
 
     @Test
     void listVehiclesUsesAuthenticatedDriverAndMapsAllFields() {
-        when(drivers.findByUserId(userId)).thenReturn(Optional.of(driver));
-        when(repository.findByDriverId(driver.getId())).thenReturn(List.of(vehicle));
+        when(driverRepository.findByUserId(userId)).thenReturn(Optional.of(driver));
+        when(vehicleRepository.findByDriverId(driver.getId())).thenReturn(List.of(vehicle));
 
-        assertEquals(List.of(expectedVehicle()), service.getDriverVehicles(authentication));
+        assertEquals(List.of(expectedVehicle()), vehicleService.getDriverVehicles(authentication));
     }
 
     @Test
     void listVehiclesReturnsEmptyListWhenDriverHasNoVehicles() {
-        when(drivers.findByUserId(userId)).thenReturn(Optional.of(driver));
-        when(repository.findByDriverId(driver.getId())).thenReturn(List.of());
+        when(driverRepository.findByUserId(userId)).thenReturn(Optional.of(driver));
+        when(vehicleRepository.findByDriverId(driver.getId())).thenReturn(List.of());
 
-        assertTrue(service.getDriverVehicles(authentication).isEmpty());
+        assertTrue(vehicleService.getDriverVehicles(authentication).isEmpty());
     }
 
     @Test
     void deleteVehicleRequiresOwnership() {
-        when(drivers.findByUserId(userId)).thenReturn(Optional.of(driver));
-        when(repository.findByIdAndDriverId(vehicle.getId(), driver.getId())).thenReturn(Optional.of(vehicle));
+        when(driverRepository.findByUserId(userId)).thenReturn(Optional.of(driver));
+        when(vehicleRepository.findByIdAndDriverId(vehicle.getId(), driver.getId())).thenReturn(Optional.of(vehicle));
 
-        service.deleteVehicle(authentication, vehicle.getId());
+        vehicleService.deleteVehicle(authentication, vehicle.getId());
 
-        verify(repository).delete(vehicle);
+        verify(vehicleRepository).delete(vehicle);
     }
 
     @Test
     void deleteMissingOrOtherDriversVehicleReturnsNotFound() {
-        when(drivers.findByUserId(userId)).thenReturn(Optional.of(driver));
+        when(driverRepository.findByUserId(userId)).thenReturn(Optional.of(driver));
 
-        assertStatus(HttpStatus.NOT_FOUND, () -> service.deleteVehicle(authentication, vehicle.getId()));
+        assertStatus(HttpStatus.NOT_FOUND, () -> vehicleService.deleteVehicle(authentication, vehicle.getId()));
 
-        verify(repository).findByIdAndDriverId(vehicle.getId(), driver.getId());
-        verify(repository, never()).delete(any());
+        verify(vehicleRepository).findByIdAndDriverId(vehicle.getId(), driver.getId());
+        verify(vehicleRepository, never()).delete(any());
     }
 
     @Test
     void missingDriverReturnsNotFoundBeforeAccessingVehicles() {
-        assertStatus(HttpStatus.NOT_FOUND, () -> service.addVehicle(authentication, request));
-        assertStatus(HttpStatus.NOT_FOUND, () -> service.getDriverVehicles(authentication));
-        assertStatus(HttpStatus.NOT_FOUND, () -> service.deleteVehicle(authentication, vehicle.getId()));
-        verifyNoInteractions(repository);
+        assertStatus(HttpStatus.NOT_FOUND, () -> vehicleService.addVehicle(authentication, request));
+        assertStatus(HttpStatus.NOT_FOUND, () -> vehicleService.getDriverVehicles(authentication));
+        assertStatus(HttpStatus.NOT_FOUND, () -> vehicleService.deleteVehicle(authentication, vehicle.getId()));
+        verifyNoInteractions(vehicleRepository);
     }
 
     private VehicleDto expectedVehicle() {
