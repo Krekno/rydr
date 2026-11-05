@@ -11,10 +11,16 @@ const api = axios.create({
 })
 
 api.interceptors.request.use(async (config) => {
+	const isAuthEndpoint =
+		config.url?.includes("/api/auth/login") || config.url?.includes("/api/auth/register") || config.url?.includes("/api/auth/refresh")
+
+	if (isAuthEndpoint) {
+		return config
+	}
+
 	const token = await tokenStorage.getAccessToken()
 
 	if (token) {
-		console.log(token)
 		config.headers.Authorization = `Bearer ${token}`
 	}
 
