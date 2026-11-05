@@ -74,3 +74,10 @@ management:
   endpoint:
     gateway:
       enabled: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.cors: DEBUG
+    reactor.netty.http.server: DEBUG
+    org.springframework.web.socket: DEBUG
