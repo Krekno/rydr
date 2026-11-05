@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/ui": "~58.0.27",
+    "@expo/vector-icons": "^15.1.1",
     "@types/react-autocomplete": "^1.8.11",
     "@types/react-native": "^0.72.8",
     "axios": "^1.21.0",

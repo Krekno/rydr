@@ -21,8 +21,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function checkAuth() {
       try {
         const refreshToken = await tokenStorage.getRefreshToken();
-        const response = await api.post<AuthResponse>('/api/auth/refresh', { refreshToken });
-        if (response.status == 200) setIsAuthenticated(true);
+
+        if (!refreshToken) {
+          setIsAuthenticated(false);
+          return;
+        }
+
+        const response = await api.post<AuthResponse>(
+          '/api/auth/refresh',
+          { refreshToken }
+        );
+
+        if (response.status === 200) {
+          await tokenStorage.setAccessToken(response.data.accessToken);
+          await tokenStorage.setRefreshToken(response.data.refreshToken);
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.log('Auth initialization failed:', error);
+        await tokenStorage.removeAccessToken();
+        await tokenStorage.removeRefreshToken();
+        setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
       }
@@ -31,16 +50,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, []);
 
-  async function signIn(refreshToken: string, accessToken: string) {
-    await tokenStorage.setRefreshToken(refreshToken);
+  async function signIn(accessToken: string, refreshToken: string) {
     await tokenStorage.setAccessToken(accessToken);
+    await tokenStorage.setRefreshToken(refreshToken);
     setIsAuthenticated(true);
   }
 
   async function signOut() {
-    await tokenStorage.removeRefreshToken();
-    await tokenStorage.removeAccessToken();
-    setIsAuthenticated(false);
+    try {
+      await api.post('/api/auth/logout');
+    } catch (e) {
+      console.log('Logout API error:', e);
+    } finally {
+      await tokenStorage.removeRefreshToken();
+      await tokenStorage.removeAccessToken();
+      setIsAuthenticated(false);
+    }
   }
 
   return (

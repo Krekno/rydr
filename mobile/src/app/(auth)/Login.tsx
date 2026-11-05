@@ -2,16 +2,19 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  View,
+  TextInput
 } from 'react-native';
 
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/services/api';
 import { AuthResponse } from '@/types/auth';
+import { useRouter } from 'expo-router';
+import { Platform } from 'react-native';
 
 export default function Login() {
 
@@ -20,6 +23,8 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const router = useRouter();
 
   async function handleLogin() {
     try {
@@ -30,7 +35,10 @@ export default function Login() {
         password,
       });
 
-      await signIn(response.data.accessToken, response.data.refreshToken);
+      await signIn(
+        response.data.accessToken,
+        response.data.refreshToken
+      );
 
       console.log(response);
 
@@ -44,47 +52,62 @@ export default function Login() {
   }
 
   return (
-    <View style={styles.container}>
-
-      <Text style={styles.title}>Welcome back.</Text>
-      <Text style={styles.subtitle}>Login to continue.</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email address"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-
-      <Pressable
-        style={styles.button}
-        onPress={handleLogin}
-        disabled={loading}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Sign in</Text>
-        )}
-      </Pressable>
+        <Text style={styles.title}>Welcome back.</Text>
+        <Text style={styles.subtitle}>Login to continue.</Text>
 
-    </View>
+        <TextInput
+          style={styles.input}
+          placeholder="Email address"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+
+        <Pressable
+          style={styles.button}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Sign in</Text>
+          )}
+        </Pressable>
+        <Pressable
+          style={styles.registerButton}
+          onPress={() => router.push('/Register')}
+        >
+          <Text style={styles.registerText}>
+            Don't have an account? Register
+          </Text>
+        </Pressable>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: '#fff',
     padding: 24,
     justifyContent: 'center',
@@ -122,5 +145,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  registerButton: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+
+  registerText: {
+    fontSize: 15,
+    color: '#555',
   },
 });

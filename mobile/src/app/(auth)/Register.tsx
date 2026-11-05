@@ -2,16 +2,18 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  View,
+  TextInput
 } from 'react-native';
 
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/services/api';
 import { AuthResponse } from '@/types/auth';
+import { Platform } from 'react-native';
 
 export default function Login() {
 
@@ -36,7 +38,10 @@ export default function Login() {
         phoneNumber,
       });
 
-      await signIn(response.data.accessToken, response.data.refreshToken);
+      await signIn(
+        response.data.accessToken,
+        response.data.refreshToken
+      );
 
       console.log(response);
 
@@ -46,78 +51,81 @@ export default function Login() {
 
     } finally {
       setLoading(false);
+
     }
   }
 
   return (
-    <View style={styles.container}>
-
-      <Text style={styles.title}>Welcome.</Text>
-      <Text style={styles.subtitle}>Register to continue.</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="First Name"
-        value={firstName}
-        onChangeText={setFirstName}
-        keyboardType="default"
-        autoCapitalize="none"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Last Name"
-        value={lastName}
-        onChangeText={setLastName}
-        keyboardType="default"
-        autoCapitalize="none"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email address"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Password (minimum 8 characters)"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Phone Number"
-        value={phoneNumber}
-        onChangeText={setPhoneNumber}
-        keyboardType="numeric"
-        autoCapitalize="none"
-      />
-
-      <Pressable
-        style={styles.button}
-        onPress={handleRegister}
-        disabled={loading}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Sign in</Text>
-        )}
-      </Pressable>
+        <Text style={styles.title}>Welcome.</Text>
+        <Text style={styles.subtitle}>Register to continue.</Text>
 
-    </View>
+        <TextInput
+          style={styles.input}
+          placeholder="First Name"
+          value={firstName}
+          onChangeText={setFirstName}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Last Name"
+          value={lastName}
+          onChangeText={setLastName}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Email address"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Password (minimum 8 characters)"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Phone Number"
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
+          keyboardType="phone-pad"
+        />
+
+        <Pressable
+          style={styles.button}
+          onPress={handleRegister}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Register</Text>
+          )}
+        </Pressable>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: '#fff',
     padding: 24,
     justifyContent: 'center',
