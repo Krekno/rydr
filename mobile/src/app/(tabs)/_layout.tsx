@@ -21,7 +21,6 @@ export default function AppLayout() {
           ),
         }}
       />
-      a
       <Tabs.Screen
         name="settings"
         options={{

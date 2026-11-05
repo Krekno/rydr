@@ -7,9 +7,11 @@ import {
 } from 'react-native';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 export default function Settings() {
   const { signOut } = useAuth();
+  const router = useRouter();
 
   return (
     <View style={styles.container}>
@@ -18,7 +20,10 @@ export default function Settings() {
 
       <Text style={styles.section}>ACCOUNT</Text>
 
-      <Pressable style={styles.item}>
+      <Pressable
+        style={styles.item}
+        onPress={() => router.push('/(tabs)/profile')}
+      >
         <Text style={styles.itemText}>Personal Information</Text>
         <Text style={styles.arrow}>›</Text>
       </Pressable>
