@@ -6,65 +6,56 @@ spring:
     name: gateway-service
   cloud:
     gateway:
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOriginPatterns: "*"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - PATCH
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: true
-      routes:
-        # Auth & User Service
-        - id: user-service-auth
-          uri: lb://user-service
-          predicates:
-            - Path=/api/auth/**, /api/users/**, /api/drivers/**, /api/admin/**
-
-        # Location Service (REST API)
-        - id: location-service
-          uri: lb://location-service
-          predicates:
-            - Path=/api/locations/**
-
-        # Trip Service
-        - id: trip-service
-          uri: lb://trip-service
-          predicates:
-            - Path=/api/trips/**
-
-        # Matching Service
-        - id: matching-service
-          uri: lb://matching-service
-          predicates:
-            - Path=/api/matching/**
-
-        # Rating Service
-        - id: rating-service
-          uri: lb://rating-service
-          predicates:
-            - Path=/api/ratings/**
-
-        # Payment Service
-        - id: payment-service
-          uri: lb://payment-service
-          predicates:
-            - Path=/api/payments/**
-
-        # Real-time WebSocket Gateway Proxy
-        - id: notification-websocket
-          uri: lb:ws://notification-service
-          predicates:
-            - Path=/ws/**
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOriginPatterns:
+                  - "*"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
+          routes:
+            - id: user-service-auth
+              uri: lb://user-service
+              predicates:
+                - Path=/api/auth/**, /api/users/**, /api/drivers/**, /api/admin/**
+            - id: location-service
+              uri: lb://location-service
+              predicates:
+                - Path=/api/locations/**
+            - id: trip-service
+              uri: lb://trip-service
+              predicates:
+                - Path=/api/trips/**
+            - id: matching-service
+              uri: lb://matching-service
+              predicates:
+                - Path=/api/matching/**
+            - id: rating-service
+              uri: lb://rating-service
+              predicates:
+                - Path=/api/ratings/**
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/api/payments/**
+            - id: notification-websocket
+              uri: lb:ws://notification-service
+              predicates:
+                - Path=/ws/**
 
 eureka:
   client:
@@ -79,5 +70,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,gatewayservice
-
+        include: health, info, gateway
+  endpoint:
+    gateway:
+      enabled: true
