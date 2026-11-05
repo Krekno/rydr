@@ -42,7 +42,7 @@ export default function Login() {
 
     } catch (e) {
       console.log(e);
-      Alert.alert('Login failed', 'Please check your credentials.');
+      Alert.alert('Register failed', 'Please check your credentials.');
 
     } finally {
       setLoading(false);
