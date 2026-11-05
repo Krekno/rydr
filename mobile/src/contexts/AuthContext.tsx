@@ -20,8 +20,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const refreshtoken = await tokenStorage.getRefreshToken();
-        const response = await api.post<AuthResponse>('/api/auth/refresh', { refreshtoken });
+        const refreshToken = await tokenStorage.getRefreshToken();
+        const response = await api.post<AuthResponse>('/api/auth/refresh', { refreshToken });
         if (response.status == 200) setIsAuthenticated(true);
       } finally {
         setIsLoading(false);
