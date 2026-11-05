@@ -14,10 +14,22 @@ api.interceptors.request.use(async (config) => {
 	const token = await tokenStorage.getAccessToken()
 
 	if (token) {
+		console.log(token)
 		config.headers.Authorization = `Bearer ${token}`
 	}
 
 	return config
 })
+
+api.interceptors.response.use(
+	(response) => response,
+	(error) => {
+		console.log("API URL:", error.config?.baseURL + error.config?.url)
+		console.log("Status:", error.response?.status)
+		console.log("Response:", error.response?.data)
+
+		return Promise.reject(error)
+	}
+)
 
 export default api

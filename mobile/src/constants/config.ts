@@ -1,1 +1,1 @@
-export const API_URL = "http://192.164.1.104:8080"
+export const API_URL = "https://gateway-service-40oe.onrender.com"
