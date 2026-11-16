@@ -100,3 +100,12 @@ tmp/
 temp/
 *.tmp
 *.bak
+
+# ==============================
+# OSRM map data
+# ==============================
+docker/osrm/*.osm.pbf
+docker/osrm/*.osrm*
+docker/osrm/*.fileIndex
+docker/osrm/*.ramIndex
+docker/osrm/*.properties
