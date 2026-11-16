@@ -80,6 +80,16 @@ services:
     networks:
       - rydr-network
 
+  osrm:
+    image: osrm/osrm-backend:latest
+    container_name: rydr-osrm
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./docker/osrm:/data:ro
+    command: osrm-routed --algorithm mld /data/turkey-261115.osrm
+    restart: unless-stopped
+
   discovery:
     build: ./discovery-service
     container_name: rydr-discovery-service
