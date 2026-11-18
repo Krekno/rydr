@@ -12,6 +12,7 @@ import org.springframework.data.geo.*;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -25,6 +26,7 @@ public class LocationService {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Value("${location.geo-key:rydr:drivers:geo}")
     private String geoKey;
@@ -63,6 +65,15 @@ public class LocationService {
                 now);
 
         kafkaTemplate.send(KafkaProducerConfig.DRIVER_LOCATION_TOPIC, driverIdStr, event);
+
+        // Broadcast to WebSocket subscribers tracking this driver
+        messagingTemplate.convertAndSend("/topic/drivers/" + driverIdStr, event);
+
+        // If driver has an active trip, broadcast directly to the trip's location topic
+        if (request.activeTripId() != null) {
+            messagingTemplate.convertAndSend("/topic/trips/" + request.activeTripId() + "/driver-location", event);
+        }
+
         log.debug("Updated location for driver: {} (lat: {}, lon: {})", driverIdStr, request.latitude(), request.longitude());
     }
 

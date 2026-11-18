@@ -23,6 +23,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
@@ -51,6 +52,8 @@ class LocationServiceTest {
     @Mock
     private KafkaTemplate<String, Object> kafkaTemplate;
     @Mock
+    private SimpMessagingTemplate messagingTemplate;
+    @Mock
     private GeoOperations<String, Object> geoOps;
     @Mock
     private ValueOperations<String, Object> valueOps;
@@ -61,7 +64,7 @@ class LocationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new LocationService(redisTemplate, kafkaTemplate);
+        service = new LocationService(redisTemplate, kafkaTemplate, messagingTemplate);
         ReflectionTestUtils.setField(service, "geoKey", GEO_KEY);
         ReflectionTestUtils.setField(service, "metaPrefix", META_PREFIX);
         ReflectionTestUtils.setField(service, "heartbeatTimeoutSeconds", TIMEOUT_SECONDS);
@@ -115,6 +118,8 @@ class LocationServiceTest {
 
         ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
         verify(kafkaTemplate).send(eq(KafkaProducerConfig.DRIVER_LOCATION_TOPIC), eq(driverId.toString()), eventCaptor.capture());
+        verify(messagingTemplate).convertAndSend(eq("/topic/drivers/" + driverId), eq(eventCaptor.getValue()));
+        verify(messagingTemplate).convertAndSend(eq("/topic/trips/" + tripId + "/driver-location"), eq(eventCaptor.getValue()));
         DriverLocationEvent event = (DriverLocationEvent) eventCaptor.getValue();
         assertEquals(driverId, event.driverId());
         assertEquals(41.0, event.latitude());
@@ -145,6 +150,8 @@ class LocationServiceTest {
 
         ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
         verify(kafkaTemplate).send(eq(KafkaProducerConfig.DRIVER_LOCATION_TOPIC), eq(driverId.toString()), eventCaptor.capture());
+        verify(messagingTemplate).convertAndSend(eq("/topic/drivers/" + driverId), eq(eventCaptor.getValue()));
+        verify(messagingTemplate, never()).convertAndSend(org.mockito.ArgumentMatchers.startsWith("/topic/trips/"), any(Object.class));
         DriverLocationEvent event = (DriverLocationEvent) eventCaptor.getValue();
         assertEquals(0.0f, event.bearing());
         assertEquals(0.0, event.speed());
