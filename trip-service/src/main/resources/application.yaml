@@ -20,8 +20,15 @@ spring:
   web:
     error:
       include-message: always
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 rsa:
   public-key: classpath:certs/public-key.pem
+osrm:
+  url: ${OSRM_URL:http://localhost:5000}
 server:
   port: 8002
 eureka:
