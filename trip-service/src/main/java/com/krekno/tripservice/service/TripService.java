@@ -74,7 +74,18 @@ public class TripService {
     @Transactional
     public void assignDriver(AssignDriverRequest request) {
         Trip trip = tripRepository.findById(request.tripId()).orElseThrow();
+
+        if (trip.getStatus() != TripStatus.REQUESTED) {
+            return;
+        }
+
+        if (trip.getDriverId() != null) {
+            return;
+        }
+
         trip.setDriverId(request.driverId());
+        trip.setStatus(TripStatus.IN_PROGRESS);
+
         tripRepository.save(trip);
 
         DriverStatusEvent event = new DriverStatusEvent(UUID.randomUUID(), request.driverId(), request.tripId(), DriverStatus.ON_TRIP);
