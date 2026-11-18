@@ -158,5 +158,23 @@ public class LocationService {
         redisTemplate.delete(metaPrefix + driverIdStr);
         log.info("Driver {} is now OFFLINE and removed from location index", driverIdStr);
     }
+
+    @KafkaListener(topics = "driver-status", groupId = "location-service-driver-status-updater")
+    public void setDriverActiveTrip(DriverStatusEvent event) {
+        DriverLocationDetails details =
+                (DriverLocationDetails) Objects.requireNonNull(redisTemplate.opsForValue().get(metaPrefix + event.driverId()));
+
+        DriverLocationDetails updated = new DriverLocationDetails(
+                details.driverId(),
+                details.latitude(),
+                details.longitude(),
+                details.bearing(),
+                details.speed(),
+                event.tripId(),
+                details.lastSeen()
+        );
+
+        redisTemplate.opsForValue().set(metaPrefix + event.driverId(), updated);
+    }
 }
 
