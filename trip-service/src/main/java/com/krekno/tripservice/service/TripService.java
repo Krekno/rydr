@@ -1,9 +1,10 @@
 package com.krekno.tripservice.service;
 
 import com.krekno.tripservice.dto.*;
-import com.krekno.tripservice.dto.event.DriverAssignedEvent;
+import com.krekno.tripservice.dto.event.DriverStatusEvent;
 import com.krekno.tripservice.dto.event.TripCreatedEvent;
 import com.krekno.tripservice.entity.Trip;
+import com.krekno.tripservice.entity.enums.DriverStatus;
 import com.krekno.tripservice.entity.enums.TripStatus;
 import com.krekno.tripservice.repository.TripRepository;
 import jakarta.transaction.Transactional;
@@ -69,20 +70,19 @@ public class TripService {
         return trip;
     }
 
-    @KafkaListener(topics = "DriverMatched",
-            groupId = "DriverAssignment")
+    @KafkaListener(topics = "driver-match", groupId = "DriverAssignment")
     @Transactional
     public void assignDriver(AssignDriverRequest request) {
         Trip trip = tripRepository.findById(request.tripId()).orElseThrow();
         trip.setDriverId(request.driverId());
         tripRepository.save(trip);
 
-        DriverAssignedEvent event = new DriverAssignedEvent(UUID.randomUUID(), request.driverId());
+        DriverStatusEvent event = new DriverStatusEvent(UUID.randomUUID(), request.driverId(), request.tripId(), DriverStatus.ON_TRIP);
 
         outboxService.saveEvent(
                 trip.getId(),
                 "DriverAssigned",
-                "driver-assigned",
+                "driver-status",
                 event
         );
     }

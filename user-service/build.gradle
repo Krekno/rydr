@@ -27,7 +27,9 @@ configurations {
 }
 
 dependencies {
-	mockitoAgent('org.mockito:mockito-core') {
+	implementation 'org.springframework.boot:spring-boot-starter-kafka'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+    mockitoAgent('org.mockito:mockito-core') {
 		transitive = false
 	}
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'

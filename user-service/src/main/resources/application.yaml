@@ -20,6 +20,11 @@ spring:
   web:
     error:
       include-message: always
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 rsa:
   private-key: classpath:certs/private-key.pem
   public-key: classpath:certs/public-key.pem
