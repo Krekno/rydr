@@ -101,30 +101,19 @@ public class LocationService {
             String driverIdStr = result.getContent().getName().toString();
             String metaKey = metaPrefix + driverIdStr;
 
-            Object metaObj = redisTemplate.opsForValue().get(metaKey);
-            if (metaObj instanceof DriverLocationDetails(
-                    UUID driverId,
-                    Double latitude1,
-                    Double longitude1,
-                    Float bearing,
-                    Double speed,
-                    UUID activeTripId,
-                    Instant lastSeen
-            )) {
-                if (activeTripId == null) {
-                    NearbyDriverResponse nearbyDriverResponse = new NearbyDriverResponse(
-                            driverId,
-                            latitude1,
-                            longitude1,
-                            result.getDistance().getValue(),
-                            bearing,
-                            speed,
-                            lastSeen);
+            DriverLocationDetails details = (DriverLocationDetails) Objects.requireNonNull(redisTemplate.opsForValue().get(metaKey));
 
-                    nearbyDrivers.add(nearbyDriverResponse);
-                }
-            } else {
-                redisTemplate.opsForZSet().remove(geoKey, driverIdStr);
+            if (details.activeTripId() == null) {
+                NearbyDriverResponse nearbyDriverResponse = new NearbyDriverResponse(
+                        details.driverId(),
+                        details.latitude(),
+                        details.longitude(),
+                        result.getDistance().getValue(),
+                        details.bearing(),
+                        details.speed(),
+                        details.lastSeen());
+
+                nearbyDrivers.add(nearbyDriverResponse);
             }
         }
 
