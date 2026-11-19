@@ -68,10 +68,8 @@ public class LocationService {
 
         kafkaTemplate.send(KafkaProducerConfig.DRIVER_LOCATION_TOPIC, driverIdStr, event);
 
-        // Broadcast to WebSocket subscribers tracking this driver
         messagingTemplate.convertAndSend("/topic/drivers/" + driverIdStr, event);
 
-        // If driver has an active trip, broadcast directly to the trip's location topic
         if (request.activeTripId() != null) {
             messagingTemplate.convertAndSend("/topic/trips/" + request.activeTripId() + "/driver-location", event);
         }
