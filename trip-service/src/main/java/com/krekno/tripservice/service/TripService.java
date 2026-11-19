@@ -1,7 +1,10 @@
+
 package com.krekno.tripservice.service;
 
 import com.krekno.tripservice.dto.*;
 import com.krekno.tripservice.dto.event.DriverStatusEvent;
+import com.krekno.tripservice.dto.event.TripCancelledEvent;
+import com.krekno.tripservice.dto.event.TripCompletedEvent;
 import com.krekno.tripservice.dto.event.TripCreatedEvent;
 import com.krekno.tripservice.entity.Trip;
 import com.krekno.tripservice.entity.enums.DriverStatus;
@@ -26,7 +29,6 @@ public class TripService {
     private final OsrmService osrmService;
     private final OutboxService outboxService;
 
-
     @Transactional
     public Trip createTrip(CreateTripRequest request, Jwt jwt) {
 
@@ -37,11 +39,13 @@ public class TripService {
                 request.destinationLongitude()
         );
 
-        BigDecimal fare = fareCalculator.calculate(route.distance(), route.duration());
+        BigDecimal fare = fareCalculator.calculate(
+                route.distance(),
+                route.duration()
+        );
 
         Trip trip = Trip.builder()
-
-                .customerId(UUID.fromString(Objects.requireNonNull(jwt.getSubject())))
+                .customerId(getUserId(jwt))
                 .driverId(null)
                 .pickupLatitude(request.pickupLatitude())
                 .pickupLongitude(request.pickupLongitude())
@@ -73,26 +77,177 @@ public class TripService {
     @KafkaListener(topics = "driver-match", groupId = "DriverAssignment")
     @Transactional
     public void assignDriver(AssignDriverRequest request) {
-        Trip trip = tripRepository.findById(request.tripId()).orElseThrow();
+
+        if (request.driverId() == null || request.tripId() == null) {
+            throw new IllegalArgumentException("Invalid driver assignment");
+        }
+
+        Trip trip = tripRepository.findById(request.tripId())
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
 
         if (trip.getStatus() != TripStatus.REQUESTED) {
             return;
         }
 
-        if (trip.getDriverId() != null) {
-            return;
-        }
-
         trip.setDriverId(request.driverId());
-        trip.setStatus(TripStatus.IN_PROGRESS);
+        trip.setStatus(TripStatus.DRIVER_ASSIGNED);
 
         tripRepository.save(trip);
 
-        DriverStatusEvent event = new DriverStatusEvent(UUID.randomUUID(), request.driverId(), request.tripId(), DriverStatus.ON_TRIP);
+        publishDriverStatus(
+                trip,
+                DriverStatus.ON_TRIP,
+                "DriverAssigned"
+        );
+    }
+
+    @Transactional
+    public Trip arriveAtPickup(UUID tripId, Jwt jwt) {
+
+        UUID driverId = getUserId(jwt);
+
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        if (trip.getStatus() != TripStatus.DRIVER_ASSIGNED) {
+            throw new IllegalStateException("Trip is not awaiting driver arrival");
+        }
+
+        if (!driverId.equals(trip.getDriverId())) {
+            throw new SecurityException("Only the assigned driver can complete the trip");
+        }
+
+        trip.setStatus(TripStatus.DRIVER_ARRIVED);
+
+        return trip;
+    }
+
+    @Transactional
+    public Trip startTrip(UUID tripId, Jwt jwt) {
+
+        UUID driverId = getUserId(jwt);
+
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        if (trip.getStatus() != TripStatus.DRIVER_ARRIVED) {
+            throw new IllegalStateException("Driver has not arrived");
+        }
+
+        if (!driverId.equals(trip.getDriverId())) {
+            throw new SecurityException("Only the assigned driver can complete the trip");
+        }
+
+        trip.setStatus(TripStatus.IN_PROGRESS);
+
+        return trip;
+    }
+
+    @Transactional
+    public Trip cancelTrip(UUID tripId, Jwt jwt) {
+
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        UUID userId = getUserId(jwt);
+
+        boolean authorized =
+                userId.equals(trip.getCustomerId()) ||
+                        userId.equals(trip.getDriverId());
+
+        if (!authorized) {
+            throw new SecurityException("Not authorized");
+        }
+
+        if (trip.getStatus() != TripStatus.REQUESTED &&
+                trip.getStatus() != TripStatus.DRIVER_ASSIGNED &&
+                trip.getStatus() != TripStatus.DRIVER_ARRIVED &&
+                trip.getStatus() != TripStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Trip cannot be cancelled");
+        }
+
+        trip.setStatus(TripStatus.CANCELLED);
+
+        if (trip.getDriverId() != null) {
+            publishDriverStatus(
+                    trip,
+                    DriverStatus.AVAILABLE,
+                    "DriverStatusChanged"
+            );
+        }
 
         outboxService.saveEvent(
                 trip.getId(),
-                "DriverAssigned",
+                "TripCancelled",
+                "trip-cancelled",
+                new TripCancelledEvent(
+                        UUID.randomUUID(),
+                        trip.getId()
+                )
+        );
+
+        return trip;
+    }
+
+    @Transactional
+    public Trip completeTrip(UUID tripId, Jwt jwt) {
+
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        UUID driverId = getUserId(jwt);
+
+        if (!driverId.equals(trip.getDriverId())) {
+            throw new SecurityException("Only the assigned driver can complete the trip");
+        }
+
+        if (trip.getStatus() != TripStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Trip is not in progress");
+        }
+
+        trip.setStatus(TripStatus.COMPLETED);
+
+        publishDriverStatus(
+                trip,
+                DriverStatus.AVAILABLE,
+                "DriverStatusChanged"
+        );
+
+        outboxService.saveEvent(
+                trip.getId(),
+                "TripCompleted",
+                "trip-completed",
+                new TripCompletedEvent(
+                        UUID.randomUUID(),
+                        trip.getId()
+                )
+        );
+
+        return trip;
+    }
+
+    private UUID getUserId(Jwt jwt) {
+        return UUID.fromString(
+                Objects.requireNonNull(jwt.getSubject())
+        );
+    }
+
+    private void publishDriverStatus(
+            Trip trip,
+            DriverStatus status,
+            String eventType
+    ) {
+
+        DriverStatusEvent event = new DriverStatusEvent(
+                UUID.randomUUID(),
+                trip.getDriverId(),
+                trip.getId(),
+                status
+        );
+
+        outboxService.saveEvent(
+                trip.getId(),
+                eventType,
                 "driver-status",
                 event
         );
