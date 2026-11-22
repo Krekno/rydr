@@ -32,10 +32,8 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
 rsa:
   public-key: classpath:certs/public-key.pem
-osrm:
-  url: ${OSRM_URL:http://localhost:5000}
 server:
-  port: 8002
+  port: 8005
 eureka:
   client:
     service-url:
