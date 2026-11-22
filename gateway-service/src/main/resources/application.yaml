@@ -39,7 +39,7 @@ spring:
             - id: trip-service
               uri: lb://trip-service
               predicates:
-                - Path=/api/trips/**
+                - Path=/api/trip/**
             - id: matching-service
               uri: lb://matching-service
               predicates:
