@@ -39,7 +39,7 @@ These are service-to-service operations and are not included in the gateway's ex
 | `GET /api/internal/users/{id}` | UUID path parameter | `200 UserDto` | Gets a user by ID. |
 | `GET /api/internal/drivers/{id}` | UUID path parameter | `200 DriverResponseDto` | Gets a driver by ID. |
 | `PATCH /api/internal/drivers/{id}/status` | `UpdateDriverStatusRequest`: `status` | `200 DriverResponseDto` | Sets driver status. |
-| `POST /api/internal/drivers/{id}/ratings` | `DriverRatingRequest`: integer `rating` from 1 to 5 | `200 DriverResponseDto` | Updates driver rating. |
+| `POST /api/internal/drivers/{id}/ratings` | `DriverRatingRequest`: integer `Rating` from 1 to 5 | `200 DriverResponseDto` | Updates driver rating. |
 
 ## Location service
 
