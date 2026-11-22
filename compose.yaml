@@ -163,7 +163,10 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      RSA_PUBLIC_KEY: file:/run/secrets/public-key.pem
       EUREKA_SERVER_URL: http://discovery:8761/eureka/
+    volumes:
+      - ./user-service/src/main/resources/certs/public-key.pem:/run/secrets/public-key.pem:ro
     depends_on:
       redis:
         condition: service_healthy
@@ -174,6 +177,53 @@ services:
     restart: unless-stopped
     networks:
       - rydr-network
+
+  trip-service:
+    build: ./trip-service
+    ports:
+      - "8002:8002"
+    environment:
+      DB_USER_URL: jdbc:postgresql://postgres:5432/trips
+      DB_USER_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_USER_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_SERVER_URL: http://discovery:8761/eureka/
+      OSRM_URL: http://osrm:5000
+      RSA_PUBLIC_KEY: file:/run/secrets/public-key.pem
+    volumes:
+      - ./user-service/src/main/resources/certs/public-key.pem:/run/secrets/public-key.pem:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery:
+        condition: service_started
+      osrm:
+        condition: service_started
+    restart: unless-stopped
+    networks: [rydr-network]
+
+  matching-service:
+    build: ./matching-service
+    ports:
+      - "8004:8004"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_SERVER_URL: http://discovery:8761/eureka/
+      OSRM_URL: http://osrm:5000
+      GATEWAY_URL: http://gateway:8080
+    depends_on:
+      kafka:
+        condition: service_healthy
+      discovery:
+        condition: service_started
+      location-service:
+        condition: service_started
+      osrm:
+        condition: service_started
+    restart: unless-stopped
+    networks: [rydr-network]
 
 networks:
   rydr-network:

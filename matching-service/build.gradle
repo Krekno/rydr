@@ -19,12 +19,13 @@ repositories {
 }
 
 ext {
-    set('springCloudVersion', "2025.1.4")
+    set('springCloudVersion', "2025.1.5")
 }
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     compileOnly 'org.projectlombok:lombok'

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Objects;
+import java.util.Arrays;
 import java.util.UUID;
 
 @Service
@@ -103,6 +104,16 @@ public class TripService {
         );
     }
 
+    @KafkaListener(topics = "trip-unmatched", groupId = "trip-service-unmatched")
+    @Transactional
+    public void markTripUnmatched(String tripId) {
+        tripRepository.findById(UUID.fromString(tripId)).ifPresent(trip -> {
+            if (trip.getStatus() == TripStatus.REQUESTED) {
+                trip.setStatus(TripStatus.NO_DRIVER_AVAILABLE);
+            }
+        });
+    }
+
     @Transactional
     public Trip arriveAtPickup(UUID tripId, Jwt jwt) {
 
@@ -153,9 +164,10 @@ public class TripService {
 
         UUID userId = getUserId(jwt);
 
-        boolean authorized =
-                userId.equals(trip.getCustomerId()) ||
-                        userId.equals(trip.getDriverId());
+        String scope = jwt.getClaimAsString("scope");
+        boolean customer = userId.equals(trip.getCustomerId()) && hasRole(scope, "ROLE_USER");
+        boolean driver = userId.equals(trip.getDriverId()) && hasRole(scope, "ROLE_DRIVER");
+        boolean authorized = customer || driver;
 
         if (!authorized) {
             throw new SecurityException("Not authorized");
@@ -189,6 +201,10 @@ public class TripService {
         );
 
         return trip;
+    }
+
+    private boolean hasRole(String scope, String role) {
+        return scope != null && Arrays.asList(scope.split("\\s+")).contains(role);
     }
 
     @Transactional
