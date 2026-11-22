@@ -7,6 +7,8 @@ import com.krekno.locationservice.service.LocationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,7 +22,8 @@ public class LocationController {
     private final LocationService locationService;
 
     @PostMapping("/drivers/ping")
-    public ResponseEntity<Void> pingLocation(@RequestBody @Valid DriverLocationPingRequest request) {
+    public ResponseEntity<Void> pingLocation(@RequestBody @Valid DriverLocationPingRequest request, @AuthenticationPrincipal Jwt jwt) {
+        if (!request.driverId().toString().equals(jwt.getSubject())) return ResponseEntity.status(403).build();
         locationService.updateDriverLocation(request);
         return ResponseEntity.noContent().build();
     }
