@@ -28,6 +28,9 @@ eureka:
   instance:
     prefer-ip-address: true
 
+rsa:
+  public-key: classpath:certs/public-key.pem
+
 location:
   heartbeat-timeout-seconds: 60
   geo-key: "rydr:drivers:geo"
