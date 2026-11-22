@@ -6,5 +6,7 @@ import java.util.UUID;
 public record TripCreatedEvent(UUID eventId,
                                UUID tripId,
                                UUID customerId,
-                               BigDecimal fare
+                               BigDecimal fare,
+                               Double lat,
+                               Double lon
 ) {}

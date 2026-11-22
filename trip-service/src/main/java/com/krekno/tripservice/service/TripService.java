@@ -61,7 +61,9 @@ public class TripService {
                 UUID.randomUUID(),
                 trip.getId(),
                 trip.getCustomerId(),
-                trip.getFare()
+                trip.getFare(),
+                trip.getPickupLatitude(),
+                trip.getPickupLongitude()
         );
 
         outboxService.saveEvent(
