@@ -80,15 +80,36 @@ services:
     networks:
       - rydr-network
 
+  osrm-prepare:
+    image: osrm/osrm-backend
+    container_name: osrm-prepare
+    restart: "no"
+    volumes:
+      - ./docker/osrm/data:/data
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        if [ ! -f /data/turkey-latest.osrm.mldgr ]; then
+          osrm-extract -p /opt/car.lua /data/turkey-latest.osm.pbf
+          osrm-partition /data/turkey-latest.osrm
+          osrm-customize /data/turkey-latest.osrm
+        else
+          echo "OSRM data already prepared, skipping."
+        fi
+
   osrm:
-    image: osrm/osrm-backend:latest
-    container_name: rydr-osrm
+    image: osrm/osrm-backend
+    container_name: osrm
+    restart: unless-stopped
+    depends_on:
+      osrm-prepare:
+        condition: service_completed_successfully
     ports:
       - "5000:5000"
     volumes:
-      - ./docker/osrm:/data:ro
-    command: osrm-routed --algorithm mld /data/turkey-261115.osrm
-    restart: unless-stopped
+      - ./docker/osrm/data:/data
+    command: osrm-routed --algorithm mld /data/turkey-latest.osrm
 
   discovery:
     build: ./discovery-service
