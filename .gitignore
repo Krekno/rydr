@@ -109,3 +109,4 @@ docker/osrm/*.osrm*
 docker/osrm/*.fileIndex
 docker/osrm/*.ramIndex
 docker/osrm/*.properties
+/docker/osrm/data/*
