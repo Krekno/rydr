@@ -32,6 +32,10 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
 rsa:
   public-key: classpath:certs/public-key.pem
+iyzico:
+  api-key: ${IYZICO_API_KEY}
+  secret-key: ${IYZICO_SECRET_KEY}
+  base-url: https://sandbox-api.iyzipay.com
 server:
   port: 8005
 eureka:
