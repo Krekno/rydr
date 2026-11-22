@@ -2,15 +2,17 @@ spring:
   application:
     name: matching-service
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
-      group-id: matching-service
+      group-id: driver-matching
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.krekno.matchingservice.dto.event
 osrm:
   url: ${OSRM_URL:http://localhost:5000}
 server:
@@ -23,8 +25,5 @@ eureka:
     fetch-registry: true
   instance:
     prefer-ip-address: true
-logging:
-  level:
-    org:
-      springframework:
-        security: DEBUG
+gateway:
+  url: ${GATEWAY_URL:http://localhost:8080}
