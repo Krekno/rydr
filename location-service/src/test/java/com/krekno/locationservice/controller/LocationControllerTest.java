@@ -11,9 +11,17 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.web.bind.support.WebDataBinderFactory;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.method.support.ModelAndViewContainer;
 
 import java.time.Instant;
 import java.util.List;
@@ -49,9 +57,39 @@ class LocationControllerTest {
 
     private MockMvc mockMvc;
 
+    private JwtAuthenticationToken authentication(UUID driverId) {
+        Jwt jwt = Jwt.withTokenValue("test-token")
+                .header("alg", "RS256")
+                .subject(driverId.toString())
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build();
+        return new JwtAuthenticationToken(jwt);
+    }
+
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(locationController).build();
+        HandlerMethodArgumentResolver jwtResolver = new HandlerMethodArgumentResolver() {
+            @Override
+            public boolean supportsParameter(MethodParameter parameter) {
+                return parameter.hasParameterAnnotation(AuthenticationPrincipal.class)
+                        && Jwt.class.isAssignableFrom(parameter.getParameterType());
+            }
+
+            @Override
+            public Object resolveArgument(MethodParameter parameter,
+                                          ModelAndViewContainer mavContainer,
+                                          NativeWebRequest webRequest,
+                                          WebDataBinderFactory binderFactory) {
+                return webRequest.getUserPrincipal() instanceof JwtAuthenticationToken auth
+                        ? auth.getToken()
+                        : null;
+            }
+        };
+
+        mockMvc = MockMvcBuilders.standaloneSetup(locationController)
+                .setCustomArgumentResolvers(jwtResolver)
+                .build();
     }
 
     // ---------- POST /api/locations/drivers/ping ----------
@@ -73,7 +111,8 @@ class LocationControllerTest {
 
         mockMvc.perform(post(BASE_URL + "/drivers/ping")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body)
+                        .principal(authentication(driverId)))
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""));
 
@@ -97,7 +136,8 @@ class LocationControllerTest {
 
         mockMvc.perform(post(BASE_URL + "/drivers/ping")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body)
+                        .principal(authentication(driverId)))
                 .andExpect(status().isNoContent());
 
         ArgumentCaptor<DriverLocationPingRequest> captor = ArgumentCaptor.forClass(DriverLocationPingRequest.class);
@@ -110,13 +150,15 @@ class LocationControllerTest {
 
     @Test
     void ping_withBoundaryCoordinates_returns204() throws Exception {
+        UUID driverId = UUID.randomUUID();
         String body = """
                 {"driverId": "%s", "latitude": -90.0, "longitude": 180.0}
-                """.formatted(UUID.randomUUID());
+                """.formatted(driverId);
 
         mockMvc.perform(post(BASE_URL + "/drivers/ping")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body)
+                        .principal(authentication(driverId)))
                 .andExpect(status().isNoContent());
 
         verify(locationService).updateDriverLocation(any());

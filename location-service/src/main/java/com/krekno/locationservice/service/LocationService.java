@@ -99,7 +99,11 @@ public class LocationService {
             String driverIdStr = result.getContent().getName().toString();
             String metaKey = metaPrefix + driverIdStr;
 
-            DriverLocationDetails details = (DriverLocationDetails) Objects.requireNonNull(redisTemplate.opsForValue().get(metaKey));
+            Object metadata = redisTemplate.opsForValue().get(metaKey);
+            if (!(metadata instanceof DriverLocationDetails details)) {
+                redisTemplate.opsForZSet().remove(geoKey, driverIdStr);
+                continue;
+            }
 
             if (details.activeTripId() == null) {
                 NearbyDriverResponse nearbyDriverResponse = new NearbyDriverResponse(
@@ -150,8 +154,11 @@ public class LocationService {
 
     @KafkaListener(topics = "driver-status", groupId = "location-service-driver-status-updater")
     public void setDriverActiveTrip(DriverStatusEvent event) {
-        DriverLocationDetails details =
-                (DriverLocationDetails) Objects.requireNonNull(redisTemplate.opsForValue().get(metaPrefix + event.driverId()));
+        Object metadata = redisTemplate.opsForValue().get(metaPrefix + event.driverId());
+        if (!(metadata instanceof DriverLocationDetails details)) {
+            log.debug("Ignoring status for driver {} without a current location heartbeat", event.driverId());
+            return;
+        }
 
         DriverLocationDetails updated = new DriverLocationDetails(
                 details.driverId(),

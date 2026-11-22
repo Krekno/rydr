@@ -5,6 +5,8 @@ import com.krekno.locationservice.dto.DriverLocationDetails;
 import com.krekno.locationservice.dto.DriverLocationEvent;
 import com.krekno.locationservice.dto.DriverLocationPingRequest;
 import com.krekno.locationservice.dto.NearbyDriverResponse;
+import com.krekno.locationservice.dto.event.DriverStatusEvent;
+import com.krekno.locationservice.dto.enums.DriverStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -252,6 +254,19 @@ class LocationServiceTest {
         verify(zSetOps).remove(GEO_KEY, stale.toString());
     }
 
+    @Test
+    void getNearbyDrivers_removesStaleDriversWithInvalidMetadata() {
+        UUID stale = UUID.randomUUID();
+        when(geoOps.radius(eq(GEO_KEY), any(Circle.class), any(RedisGeoCommands.GeoRadiusCommandArgs.class)))
+                .thenReturn(new GeoResults<>(List.of(geoResult(stale, 0.5))));
+        when(valueOps.get(META_PREFIX + stale)).thenReturn("invalid metadata");
+
+        List<NearbyDriverResponse> result = service.getNearbyDrivers(41.0, 29.0, 5.0, 10);
+
+        assertTrue(result.isEmpty());
+        verify(zSetOps).remove(GEO_KEY, stale.toString());
+    }
+
     // ---------- getDriverLocation ----------
 
     @Test
@@ -336,5 +351,37 @@ class LocationServiceTest {
 
         verify(zSetOps).remove(GEO_KEY, driverId.toString());
         verify(redisTemplate).delete(META_PREFIX + driverId);
+    }
+
+    @Test
+    void setDriverActiveTrip_whenMetadataMissing_ignoresEventWithoutThrowing() {
+        UUID driverId = UUID.randomUUID();
+        DriverStatusEvent event = new DriverStatusEvent(UUID.randomUUID(), driverId,
+                UUID.randomUUID(), DriverStatus.ON_TRIP);
+        when(valueOps.get(META_PREFIX + driverId)).thenReturn(null);
+
+        assertDoesNotThrow(() -> service.setDriverActiveTrip(event));
+
+        verify(valueOps, never()).set(eq(META_PREFIX + driverId), any());
+    }
+
+    @Test
+    void setDriverActiveTrip_whenMetadataExists_updatesTripAndPreservesLocation() {
+        UUID driverId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+        DriverLocationDetails existing = details(driverId, null);
+        DriverStatusEvent event = new DriverStatusEvent(UUID.randomUUID(), driverId,
+                tripId, DriverStatus.ON_TRIP);
+        when(valueOps.get(META_PREFIX + driverId)).thenReturn(existing);
+
+        service.setDriverActiveTrip(event);
+
+        ArgumentCaptor<Object> updatedCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(valueOps).set(eq(META_PREFIX + driverId), updatedCaptor.capture());
+        DriverLocationDetails updated = (DriverLocationDetails) updatedCaptor.getValue();
+        assertEquals(tripId, updated.activeTripId());
+        assertEquals(existing.latitude(), updated.latitude());
+        assertEquals(existing.longitude(), updated.longitude());
+        assertEquals(existing.lastSeen(), updated.lastSeen());
     }
 }
