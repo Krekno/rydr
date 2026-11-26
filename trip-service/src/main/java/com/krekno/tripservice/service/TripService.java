@@ -3,7 +3,6 @@ package com.krekno.tripservice.service;
 
 import com.krekno.tripservice.dto.*;
 import com.krekno.tripservice.dto.event.DriverStatusEvent;
-import com.krekno.tripservice.dto.event.TripCancelledEvent;
 import com.krekno.tripservice.dto.event.TripCompletedEvent;
 import com.krekno.tripservice.dto.event.TripCreatedEvent;
 import com.krekno.tripservice.entity.Trip;
@@ -189,16 +188,6 @@ public class TripService {
                     "DriverStatusChanged"
             );
         }
-
-        outboxService.saveEvent(
-                trip.getId(),
-                "TripCancelled",
-                "trip-cancelled",
-                new TripCancelledEvent(
-                        UUID.randomUUID(),
-                        trip.getId()
-                )
-        );
 
         return trip;
     }
