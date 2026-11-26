@@ -1,0 +1,128 @@
+erDiagram
+%% User service database
+    USER {
+        UUID id PK
+        string first_name
+        string last_name
+        string email UK
+        string password
+        string phone_number
+        Role role
+        datetime created_at
+    }
+
+    DRIVER {
+        UUID id PK
+        UUID user_id FK
+        DriverStatus status
+        float rating_average
+        int rating_count
+        boolean is_verified
+        datetime created_at
+    }
+
+    VEHICLE {
+        UUID id PK
+        UUID driver_id FK
+        string make
+        string model
+        int year
+        string color
+        string license_plate
+    }
+
+    REFRESH_TOKEN {
+        UUID id PK
+        UUID user_id FK
+        string token
+        datetime created_at
+        datetime expires_at
+    }
+
+%% Trip service database
+    TRIP {
+        UUID id PK
+        UUID customer_id FK
+        UUID driver_id FK
+        TripStatus status
+        double pickup_latitude
+        double pickup_longitude
+        double destination_latitude
+        double destination_longitude
+        decimal fare
+        datetime created_at
+        datetime updated_at
+        datetime started_at
+        datetime completed_at
+        datetime cancelled_at
+        long version
+    }
+
+%% Payment service database
+    PAYMENT {
+        UUID id PK
+        UUID trip_id FK
+        UUID passenger_id FK
+        decimal amount
+        string currency
+        string iyzico_token UK
+        string iyzico_payment_id
+        string conversation_id
+        string payment_page_url
+        PaymentStatus status
+        string provider_payment_id
+        string failure_reason
+        datetime created_at
+    }
+
+    CARD {
+        UUID id PK
+        UUID user_id FK
+        string card_user_key
+        string card_token
+        string last_four
+        string alias
+        datetime created_at
+    }
+
+    BUYER {
+        UUID id PK
+        UUID user_id FK
+        string name
+        string surname
+        string identity_number
+        string email
+        string gsm_number
+        string registration_address
+        string city
+        string country
+        datetime created_at
+        datetime updated_at
+    }
+
+%% Rating service database
+    RATING {
+        UUID id PK
+        UUID trip_id FK
+        UUID driver_id FK
+        UUID customer_id FK
+        int score
+        string comment
+        datetime created_at
+    }
+
+%% Physical foreign keys within the user service database
+    USER ||--o| DRIVER : ""
+    USER ||--o| REFRESH_TOKEN : ""
+    DRIVER ||--o{ VEHICLE : ""
+
+%% Cross-service ID references; these are not database-enforced foreign keys
+    USER ||--o{ TRIP : ""
+    DRIVER o|--o{ TRIP : ""
+    USER ||--o{ PAYMENT : ""
+    TRIP ||--o{ PAYMENT : ""
+    USER ||--o{ CARD : ""
+    USER ||--o| BUYER : ""
+    TRIP ||--o{ RATING : ""
+    DRIVER ||--o{ RATING : ""
+    USER ||--o{ RATING : ""
